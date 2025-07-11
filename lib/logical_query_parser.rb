@@ -14,9 +14,16 @@ module LogicalQueryParser
       LogicalQueryParserParser.new
     end
 
-    def search(query, relations, *options, parser: new)
+    def search(query, relations, *options)
       relations = relations.all if relations.respond_to?(:all)
-      assoc = resolve_assocs(relations.klass, *options)
+      if options.size == 1 && options[0].is_a?(Hash)
+        columns = options[0][:columns] || []
+        parser = options[0][:parser]
+      end
+      columns ||= options
+      parser ||= new
+
+      assoc = resolve_assocs(relations.klass, *columns)
       sql = parser.parse(query).to_sql(model: relations.klass, columns: assoc.column_mapping)
       relations.joins(assoc.structure).where(sql)
     end
